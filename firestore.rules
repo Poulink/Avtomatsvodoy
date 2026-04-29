@@ -1,0 +1,65 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() { return request.auth != null && request.auth.token.email_verified == true; }
+    function isAdmin() { 
+      return isSignedIn() && (
+        request.auth.token.email == 'kolobochi123@gmail.com' || 
+        request.auth.token.email == 'fidantahmaz93@gmail.com' || 
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      ); 
+    }
+    
+    function isOwner() { return isSignedIn() && existing().userId == request.auth.uid; }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+
+    function isValidRequest(data) {
+      return data.keys().hasAll(['userId', 'status', 'createdAt', 'updatedAt', 'washBasin', 'waterLevel']) &&
+             data.keys().size() == 6 &&
+             data.userId == request.auth.uid &&
+             data.status in ['pending', 'filling', 'ignore', 'filled'] &&
+             data.createdAt is timestamp &&
+             data.updatedAt is timestamp &&
+             data.washBasin is bool &&
+             data.waterLevel is number && data.waterLevel >= 0 && data.waterLevel <= 100;
+    }
+
+    match /requests/{requestId} {
+      allow read: if isValidId(requestId) && (isOwner() || isAdmin());
+      allow list: if isSignedIn() && (isAdmin() || resource.data.userId == request.auth.uid);
+
+      allow create: if isValidId(requestId) &&
+                       isSignedIn() &&
+                       isValidRequest(incoming()) &&
+                       incoming().createdAt == request.time &&
+                       incoming().updatedAt == request.time;
+
+      allow update: if isValidId(requestId) &&
+                       isSignedIn() &&
+                       (
+                         (isAdmin() && 
+                          incoming().keys().hasAll(['userId', 'status', 'createdAt', 'updatedAt', 'washBasin', 'waterLevel']) &&
+                          incoming().userId == existing().userId &&
+                          incoming().createdAt == existing().createdAt &&
+                          incoming().washBasin == existing().washBasin &&
+                          incoming().waterLevel == existing().waterLevel &&
+                          incoming().updatedAt == request.time &&
+                          incoming().status in ['pending', 'filling', 'ignore', 'filled'] &&
+                          incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt'])
+                         )
+                       );
+
+      allow delete: if isValidId(requestId) && (isAdmin() || isOwner());
+    }
+
+    match /admins/{userId} {
+      allow get: if isValidId(userId) && isSignedIn() && request.auth.uid == userId;
+    }
+  }
+}

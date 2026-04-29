@@ -1,0 +1,56 @@
+{
+  "entities": {
+    "Request": {
+      "title": "Water Request",
+      "description": "A request to fill water.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The UID of the user who made the request."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["pending", "filling", "ignore", "filled"],
+          "description": "The current status of the request."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "timestamp"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "timestamp"
+        },
+        "washBasin": {
+          "type": "boolean"
+        },
+        "waterLevel": {
+          "type": "number"
+        }
+      },
+      "required": ["userId", "status", "createdAt", "updatedAt", "washBasin", "waterLevel"]
+    },
+    "Admin": {
+      "title": "Admin Record",
+      "description": "A record indicating a user is an admin.",
+      "type": "object",
+      "properties": {},
+      "required": []
+    }
+  },
+  "firestore": {
+    "/requests/{requestId}": {
+      "schema": {
+        "$ref": "#/entities/Request"
+      },
+      "description": "Stores user water requests."
+    },
+    "/admins/{userId}": {
+      "schema": {
+        "$ref": "#/entities/Admin"
+      },
+      "description": "Stores admin user IDs."
+    }
+  }
+}

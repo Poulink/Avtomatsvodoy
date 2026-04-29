@@ -1,0 +1,18 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", -apple-system, system-ui, sans-serif;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: #fcefe3; /* soft warm tone, wait water should be fresh */
+  /* Let's try light blue/gray background */
+}
+@layer base {
+  body {
+    background-color: #f4f8fb;
+    color: #1a2333;
+  }
+}
